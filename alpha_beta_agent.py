@@ -25,6 +25,7 @@ class AlphaBetaAgent(agent.Agent):
     # NOTE: make sure the column is legal, or you'll lose the game.
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
+        self.player = brd.player
         return self.alpha_beta_search(self.max_depth, -10000000, 100000000, True, brd)[1]
 
     def alpha_beta_search(self, depth, alpha, beta, is_maximizing, current_board):
@@ -33,7 +34,7 @@ class AlphaBetaAgent(agent.Agent):
             return self.heuristic(current_board, depth), -1
         best_column = 999
         if is_maximizing:
-            value = -10000000
+            value = -1000000000000
             for child in children:
                 new_val = self.alpha_beta_search(depth - 1, alpha, beta, False, child[0])[0]
                 if new_val >= value:
@@ -43,7 +44,7 @@ class AlphaBetaAgent(agent.Agent):
                 if alpha >= beta:
                     break
         else:
-            value = 10000000
+            value = 1000000000000
             for child in children:
                 new_value = self.alpha_beta_search(depth - 1, alpha, beta, False, child[0])[0]
                 value = min(value, new_value)
@@ -54,15 +55,20 @@ class AlphaBetaAgent(agent.Agent):
 
     def heuristic(self, brd, depth_remaining):
         current_depth = self.max_depth - depth_remaining
-        if brd.get_outcome() == 2:
+        other_player = 0
+        if self.player == 1:
+            other_player = 2
+        else:
+            other_player = 1
+        if brd.get_outcome() == self.player:
             return 100000000 - 100 * current_depth
-        if brd.get_outcome() == 1:
+        if brd.get_outcome() == other_player:
             return -100000000 + 100 * current_depth
         connected_lines = self.count_usable_connected_in_board(brd)
         score = 0
-        for line in connected_lines[2]:
+        for line in connected_lines[self.player]:
             score += (10 ** (line - 1)) * connected_lines[2][line]
-        for line in connected_lines[1]:
+        for line in connected_lines[other_player]:
             score -= (10 ** (line - 1)) * connected_lines[1][line]
         return score
 
@@ -122,6 +128,7 @@ class AlphaBetaAgent(agent.Agent):
             return 0, []
         return line_len, visited_coords
 
+    # Checks if the given coordinate is within the board
     def within_board(self, brd, x, y):
         return not(y < 0 or y >= brd.h or x < 0 or x >= brd.w)
 
@@ -149,11 +156,3 @@ class AlphaBetaAgent(agent.Agent):
             # Add board to list of successors
             succ.append((nb,col))
         return succ
-
-
-class Node(object):
-    is_terminal = False
-
-    def __init__(self, brd):
-        self.brd = brd
-
