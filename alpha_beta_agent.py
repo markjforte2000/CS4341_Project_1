@@ -76,19 +76,21 @@ class AlphaBetaAgent(agent.Agent):
             1: {},
             2: {}
         }
-        for i in range(board.n + 1):
+        for i in range(board.n + 2):
             num_lines_of_length_n[1][i] = 0
             num_lines_of_length_n[2][i] = 0
         visited_coords = []
         for y in range(board.h):
             for x in range(board.w):
-                if board.board[y][x] == 0 or (x, y) in visited_coords:
+                if (x, y) in visited_coords:
                     continue
-                player = board.board[y][x]
                 lines, visited = self.get_usable_line_length_in_every_dir(board, x, y)
+                if not lines:
+                    continue
                 visited_coords.extend(visited)
                 for line in lines:
-                    num_lines_of_length_n[player][line] += 1
+                    player = line.player
+                    num_lines_of_length_n[player][line.length] += 1
         return num_lines_of_length_n
 
     def get_usable_line_length_in_every_dir(self, board, x, y):
@@ -101,16 +103,26 @@ class AlphaBetaAgent(agent.Agent):
         ]
         visited_coords = []
         for direction in dirs:
-            line, visited = self.get_usable_line_length(board, x, y, direction[0], direction[1])
-            visited_coords.extend(visited)
+            line = self.get_usable_line_length(board, x, y, direction[0], direction[1])
+            if line is None:
+                continue
+            visited_coords.extend(line.coordinates)
             lines.append(line)
         return lines, visited_coords
 
     def get_usable_line_length(self, brd, x, y, dir_x, dir_y):
         line_len = 0
-        player = brd.board[y][x]
-        x1, x2 = x, x
-        y1, y2 = y, y
+        x1, x2 = x + dir_x, x - dir_x
+        y1, y2 = y + dir_y, y - dir_y
+        if brd.board[y][x] == 0 and self.within_board(brd, x1, y1) and \
+                self.within_board(brd, x2, y2) and \
+                brd.board[y1][x1] == brd.board[y2][x2] and brd.board[y2][x2] != 0:
+            player = brd.board[y1][x1]
+        elif brd.board[y][x] == 0:
+            return None
+        else:
+            player = brd.board[y][x]
+
         visited_coords = []
         while self.within_board(brd, x1, y1) and brd.board[y1][x1] == player:
             visited_coords.append((x1, y1))
@@ -124,8 +136,9 @@ class AlphaBetaAgent(agent.Agent):
             y2 -= dir_y
         if (not self.within_board(brd, x1, y1) or brd.board[y1][x1] != 0) and \
                 (not self.within_board(brd, x2, y2) or brd.board[y2][x2] != 0):
-            return 0, []
-        return line_len, visited_coords
+            return None
+        line = Line(player, visited_coords, line_len)
+        return line
 
     # Checks if the given coordinate is within the board
     def within_board(self, brd, x, y):
@@ -153,5 +166,16 @@ class AlphaBetaAgent(agent.Agent):
             # (This internally changes nb.player, check the method definition!)
             nb.add_token(col)
             # Add board to list of successors
-            succ.append((nb,col))
+            succ.append((nb, col))
         return succ
+
+
+class Line(object):
+
+    def __init__(self, player, coordinates, length):
+        self.player = player
+        self.coordinates = coordinates,
+        self.length = length
+
+
+THE_AGENT = AlphaBetaAgent("Group29", 4)
