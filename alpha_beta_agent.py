@@ -43,10 +43,10 @@ class AlphaBetaAgent(agent.Agent):
                 alpha = max(alpha, value)
                 if alpha >= beta:
                     break
-        else:
+        else:  # minimizing
             value = 1000000000000
             for child in children:
-                new_value = self.alpha_beta_search(depth - 1, alpha, beta, False, child[0])[0]
+                new_value = self.alpha_beta_search(depth - 1, alpha, beta, True, child[0])[0]
                 value = min(value, new_value)
                 beta = min(beta, value)
                 if beta <= alpha:
@@ -55,7 +55,6 @@ class AlphaBetaAgent(agent.Agent):
 
     def heuristic(self, brd, depth_remaining):
         current_depth = self.max_depth - depth_remaining
-        other_player = 0
         if self.player == 1:
             other_player = 2
         else:
@@ -67,9 +66,9 @@ class AlphaBetaAgent(agent.Agent):
         connected_lines = self.count_usable_connected_in_board(brd)
         score = 0
         for line in connected_lines[self.player]:
-            score += (10 ** (line - 1)) * connected_lines[2][line]
+            score += (10 ** (line - 1)) * connected_lines[self.player][line]
         for line in connected_lines[other_player]:
-            score -= (10 ** (line - 1)) * connected_lines[1][line]
+            score -= (10 ** (line - 1)) * connected_lines[other_player][line]
         return score
 
     def count_usable_connected_in_board(self, board):
